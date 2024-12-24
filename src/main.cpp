@@ -5,7 +5,5 @@
 int main() {
     std::cout << "Hello world!";
     Queue<char*> *q = new Queue<char*>();
-
-
     delete q;
 }
