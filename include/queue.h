@@ -21,8 +21,8 @@ public:
     bool dequeue();
 
 private:
-    std::atomic<std::shared_ptr<Node<T>>> head;
-    std::atomic<std::shared_ptr<Node<T>>> tail;
+    std::shared_ptr<Node<T>> head;
+    std::shared_ptr<Node<T>> tail;
 };
 
 // Implementation of Queue methods
@@ -30,7 +30,7 @@ template <typename T>
 Queue<T>::Queue() {
     std::shared_ptr<Node<T>> initialNode = std::make_shared<Node<T>>(T{});
     this->head = initialNode;
-    this->tail.store(initialNode);
+    this->tail = initialNode;
 }
 
 template <typename T>
@@ -40,15 +40,15 @@ bool Queue<T>::enqueue(T value) {
 
     while (true) {
         auto tail = this->tail;
-        auto tailNext = this->tailNext;
+        auto tailNext = this->tail->next;
 
         if (tail == this->tail) {
             if (head == tail) {
                 if (tailNext == nullptr) {
                     return false;
                 } else {
-                    this->tail.compare_exchange_strong(tail, std::make_shared<Node<T>>(tailNext->value, tailNext->next, tailNext->count));
-                    
+                    // go to next pointer
+                    this->tail.compare_exchange_strong(tail, std::make_shared<Node<T>>(tailNext->value, tailNext->next->ptr, tailNext->count));
                 }
             }
         }
