@@ -7,6 +7,7 @@ int main() {
     Queue<char*> *q = new Queue<char*>();
 
     q->enqueue("hello");
+    q->dequeue();
 
     delete q;
 }
