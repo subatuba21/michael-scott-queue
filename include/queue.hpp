@@ -48,14 +48,15 @@ bool Queue<T>::enqueue(T value)
             {
                 // newNode pointer is nullptr
                 Pointer<T> newPointer(newNode, tail.count + 1);
-                tail.ptr->next.compare_exchange_weak(tailNext, newPointer, std::memory_order_release, std::memory_order_relaxed);
-                break;
+                if (tail.ptr->next.compare_exchange_weak(tailNext, newPointer, std::memory_order_release, std::memory_order_relaxed))
+                    break;
             }
             else
             {
                 // go to next pointer
                 Pointer<T> newTail(tailNext.ptr, tail.count + 1);
-                this->tail.compare_exchange_weak(tail, newTail, std::memory_order_acquire, std::memory_order_relaxed);
+                if (this->tail.compare_exchange_weak(tail, newTail, std::memory_order_acquire, std::memory_order_relaxed))
+                    break;
             }
         }
     }
@@ -63,7 +64,8 @@ bool Queue<T>::enqueue(T value)
     // we're done, swing tail over
     Pointer<T> oldTail = this->tail.load();
     Pointer<T> newTail(newNode, oldTail.count + 1);
-    this->tail.compare_exchange_weak(oldTail, newTail, std::memory_order_release, std::memory_order_relaxed);
+    
+    while (!this->tail.compare_exchange_strong(oldTail, newTail, std::memory_order_release, std::memory_order_relaxed));
 }
 
 template <typename T>
@@ -91,14 +93,15 @@ bool Queue<T>::dequeue()
                     // tail is falling behind
                     // go to next pointer
                     Pointer<T> newTail(headNext.ptr, tail.count + 1);
-                    this->tail.compare_exchange_weak(tail, headNext, std::memory_order_acquire, std::memory_order_relaxed);
+                    if (this->tail.compare_exchange_weak(tail, headNext, std::memory_order_acquire, std::memory_order_relaxed))
+                        break;
                 }
             }
             else
             {
                 Pointer<T> newHead(headNext.ptr, head.count + 1);
-                this->head.compare_exchange_weak(head, newHead, std::memory_order_acquire, std::memory_order_relaxed);
-                break;
+                if (this->head.compare_exchange_weak(head, newHead, std::memory_order_acquire, std::memory_order_relaxed))
+                    break;
             }
         }
     }
