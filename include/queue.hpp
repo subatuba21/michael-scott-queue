@@ -14,6 +14,7 @@ public:
     ~Queue();
     bool enqueue(T value);
     bool dequeue();
+    int length();
 
 private:
     std::atomic<Pointer<T>> head;
@@ -112,5 +113,19 @@ bool Queue<T>::dequeue()
         }
     }
 }
+
+
+template <typename T>
+int Queue<T>::length() {
+    int count = 0;
+    Pointer<T> current = this->head.load(std::memory_order_acquire);
+
+    while (current.ptr != nullptr) {
+        current = current.ptr->next;
+    }
+
+    return count - 1;
+}
+
 
 #endif // QUEUE_H
