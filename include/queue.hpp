@@ -11,7 +11,7 @@ class Queue
 {
 public:
     Queue();
-    ~Queue() = default;
+    ~Queue();
     bool enqueue(T value);
     bool dequeue();
 
@@ -27,6 +27,13 @@ Queue<T>::Queue()
     Node<T> *initialNode = new Node<T>(T{});
     this->head = Pointer(initialNode, 0);
     this->tail = Pointer(initialNode, 0);
+}
+
+template <typename T>
+Queue<T>::~Queue()
+{
+    while (dequeue()); // Dequeue and delete all remaining nodes
+    delete head.load().ptr; // Delete the dummy node
 }
 
 template <typename T>
@@ -48,8 +55,7 @@ bool Queue<T>::enqueue(T value)
             {
                 // newNode pointer is nullptr
                 Pointer<T> newPointer(newNode, tail.count + 1);
-                if (tail.ptr->next.compare_exchange_weak(tailNext, newPointer, std::memory_order_release, std::memory_order_relaxed))
-                    break;
+                tail.ptr->next.compare_exchange_weak(tailNext, newPointer, std::memory_order_release, std::memory_order_relaxed);
             }
             else
             {
@@ -93,14 +99,14 @@ bool Queue<T>::dequeue()
                     // tail is falling behind
                     // go to next pointer
                     Pointer<T> newTail(headNext.ptr, tail.count + 1);
-                    if (this->tail.compare_exchange_weak(tail, headNext, std::memory_order_acquire, std::memory_order_relaxed))
-                        break;
+                    this->tail.compare_exchange_weak(tail, headNext, std::memory_order_acquire, std::memory_order_relaxed);
                 }
             }
             else
             {
                 Pointer<T> newHead(headNext.ptr, head.count + 1);
                 if (this->head.compare_exchange_weak(head, newHead, std::memory_order_acquire, std::memory_order_relaxed))
+                    delete head.ptr;
                     break;
             }
         }
